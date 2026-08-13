@@ -1,24 +1,18 @@
 <?xml version="1.0"?>
-<info xmlns:xsi= "http://www.w3.org/2001/XMLSchema-instance"
-xsi:noNamespaceSchemaLocation="https://apps.nextcloud.com/schema/apps/info.xsd">
-	<id>files_external_gdrive</id>
-	<name>External storage support for Google Drive</name>
-	<summary>External storage support for Google Drive</summary>
-	<description>External storage support for Google Drive</description>
-	<licence>AGPL</licence>
-	<author mail="samy@nastuzzi.fr" homepage="https://github.com/NastuzziSamy/files_external_gdrive.git">NASTUZZI Samy</author>
-	<version>0.4.0</version>
+<info xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://apps.nextcloud.com/schema/apps/info.xsd">
+    <id>files_external_gdrive</id>
+    <name>Google Drive</name>
+    <summary>Native Google Drive Backend</summary>
+    <description>Google Drive with automated OAuth2 token generation for Nextcloud 34.</description>
+    <version>2.1.0</version>
+    <licence>agpl</licence>
+    <author>el-choco</author>
+    <namespace>Files_external_gdrive</namespace>
+    <types>
+        <filesystem/>
+    </types>
     <category>files</category>
-	<category>tools</category>
-	<types>
-		<filesystem/>
-	</types>
-
-	<namespace>Files_external_gdrive</namespace>
-	<dependencies>
-		<nextcloud min-version="15" max-version="16"/>
-	</dependencies>
-	<website>https://github.com/NastuzziSamy/files_external_gdrive/</website>
-	<bugs>https://github.com/NastuzziSamy/files_external_gdrive/issues</bugs>
-	<repository type="git">https://github.com/NastuzziSamy/files_external_gdrive.git</repository>
+    <dependencies>
+        <nextcloud min-version="33" max-version="34" />
+    </dependencies>
 </info>

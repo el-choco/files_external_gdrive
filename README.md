@@ -1,47 +1,40 @@
-# Files External Google Drive (Nextcloud app)
-  Google Drive external storage support for Nextcloud (still in Beta)
+## Based on the original work by Samy Nastuzzi, completely rewritten and optimized for Nextcloud 34 by el-choco.
 
+# Files External Google Drive (Nextcloud App)
 
-# Installation
+Native Google Drive external storage support for Nextcloud. Fully refactored and optimized for Nextcloud 33 & 34.
 
-First of all, you need to enable the `files_external` app.
+## 🚀 Key Features & Updates
 
-## From the appstore
-- Simply install `files_external_gdrive` from the Nextcloud appstore
+*   **Nextcloud 34 Ready:** Includes a custom `DirWrapper` implementation to seamlessly replace the deprecated and removed `OC\Files\Stream\Dir` class.
+*   **Automated OAuth2 Flow:** No more manual token copying! Generates and injects the token directly within the Nextcloud UI.
+*   **Strict CSP & COOP Bypass:** Fully compatible with modern browser security policies (like Microsoft Edge) and Nextcloud's strict Content Security Policy.
 
-## From git
-- First, clone the repo `git clone https://github.com/NastuzziSamy/files_external_gdrive.git`
-- Execute `make install` in the app directory
-- And enable the app with `php occ app:enable files_external_gdrive` in the Nextcloud directory
+## 🛠️ Installation
 
-# Usage
-## Google configuration
+First of all, you need to enable the official `files_external` app in Nextcloud.
 
-In order to use the app, you need to create an OAuth2 client via: https://console.developers.google.com/apis/
+### From Git
+*   Clone the repository into your custom apps folder:
+    `git clone https://github.com/el-choco/files_external_gdrive.git`
+*   Set the correct permissions (e.g., `chown -R 33:33 files_external_gdrive`).
+*   Enable the app via OCC:
+    `php occ app:enable files_external_gdrive`
 
-Complete all needed information, as:
-- App name (put "Nextcloud" so you can remember you use it for Nextcloud)
-- JS origin urls
-- Redirect urls (for OAuth2 callback)
+## ⚙️ Usage
 
+### Google Configuration
+In order to use the app, you need to create an OAuth2 client via the [Google Cloud Console](https://console.developers.google.com/apis/).
 
-## On Nextcloud
+Complete all needed information:
+*   **App name:** (e.g., "Nextcloud" so you remember what it is used for)
+*   **Authorized JavaScript origins:** Your Nextcloud domain.
+*   **Authorized redirect URIs:** Important! Must exactly match your Nextcloud callback URL (e.g., `https://your-domain.com/apps/files_external_gdrive/callback`).
 
-Use your Google credentials to authorize access and connect to your Google account to give access to your Drive.
-
-
-# TODOs
-- [x] Make files and directories:
-    - [x] Printable
-    - [x] Readable
-    - [x] Downloadable
-    - [x] Uploadable
-    - [x] Editable
-    - [x] Renamable
-    - [x] With the right mimetype
-- [x] Allow regular user to create its own Google Drive external storage
-- [x] Fix Oauth duplications
-- [ ] Print better stats
-- [ ] Update only on changes
-- [ ] Optimize
-- [ ] Unit tests
+### On Nextcloud
+1.  Go to **Admin Settings -> External Storage**.
+2.  Select **Google Drive** from the dropdown menu.
+3.  Enter your Google **Client ID** and **Client Secret**.
+4.  Click the new **"🔑 Connect with Google & Get Token"** button.
+5.  Authorize the app in the Google popup window.
+6.  Once the popup closes automatically and the button turns green (**"✅ Success! Please click Create!"**), click the checkmark to save and mount your drive.

@@ -1,148 +1,70 @@
 <?php
-/**
- * @author Vincent Petry <pvince81@owncloud.com>
- * @author Samy NASTUZZI <samy@nastuzzi.fr>
- *
- * @copyright Copyright (c) 2017, ownCloud GmbH
- * @license AGPL-3.0
- *
- * This code is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License, version 3,
- * as published by the Free Software Foundation.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU Affero General Public License for more details.
- *
- * You should have received a copy of the GNU Affero General Public License, version 3,
- * along with this program.  If not, see <http://www.gnu.org/licenses/>
- *
- */
+namespace OCA\Files_external_gdrive\Controller;
 
-namespace OCA\Files_External_Gdrive\Controller;
-
-
-use OCP\AppFramework\Http\DataResponse;
 use OCP\AppFramework\Controller;
-use OCP\AppFramework\Http;
-use OCP\IL10N;
+use OCP\AppFramework\Http\DataResponse;
 use OCP\IRequest;
+use OCP\AppFramework\Http\Attribute\NoAdminRequired;
+use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
+use OCP\AppFramework\Http\Attribute\PublicPage;
+use OCP\AppFramework\Http\Attribute\NoSameSiteCookieRequired;
 
-/**
- * Oauth controller for GDrive
- */
-class OauthController extends Controller
-{
-    /**
-     * L10N service
-     *
-     * @var IL10N
-     */
-    protected $l10n;
-
-    /**
-     * Creates a new storages controller.
-     *
-     * @param string   $AppName application name
-     * @param IRequest $request request
-     * @param IL10N    $l10n    l10n service
-     */
-    public function __construct($AppName, IRequest $request, IL10N $l10n)
-    {
-        parent::__construct($AppName, $request);
-        $this->l10n = $l10n;
+class OauthController extends Controller {
+    public function __construct(string $appName, IRequest $request) {
+        parent::__construct($appName, $request);
     }
 
-    /**
-     * Create a storage from its parameters
-     *
-     * @param string  $client_id
-     * @param string  $client_secret
-     * @param string  $redirect
-     * @param integer $step
-     * @param string  $code
-     * @return IStorageConfig|DataResponse
-     */
-    public function receiveToken($client_id, $client_secret, $redirect, $step, $code)
-    {
-        if ($client_id !== null && $client_secret !== null && $redirect !== null) {
-            $client = new \Google_Client();
-            $client->setClientId($client_id);
-            $client->setClientSecret($client_secret);
-            $client->setRedirectUri($redirect);
-            $client->setScopes([
-                \Google_Service_Drive::DRIVE,
-            ]);
-            $client->setApprovalPrompt('force');
-            $client->setAccessType('offline');
-            if ($step !== null) {
-                   $step = (int) $step;
-                if ($step === 1) {
-                    try {
-                        $authUrl = $client->createAuthUrl();
-                        return new DataResponse(
-                             [
-                                 'status' => 'success',
-                                 'data' => [
-                                     'url' => $authUrl
-                                 ]
-                             ]
-                         );
-                    } catch (Exception $exception) {
-                        return new DataResponse(
-                            [
-                                'status' => 'error',
-                                'data' => [
-                                    'message' => $l->t('Step 1 failed. Exception: %s', [$exception->getMessage()]),
-                                ]
-                            ],
-                            Http::STATUS_UNPROCESSABLE_ENTITY
-                        );
-                    }
-                } else if ($step === 2 && $code !== null) {
-                    try {
-                        $token = $client->authenticate($code);
-
-                        if (isset($token['error'])) {
-                            return new DataResponse(
-                                [
-                                    'status' => 'error',
-                                    'data' => $token
-                                ],
-                                Http::STATUS_BAD_REQUEST
-                            );
-                        }
-
-                        return new DataResponse(
-                            [
-                                'status' => 'success',
-                                'data' => [
-                                    'token' => json_encode($token),
-                                ]
-                            ]
-                        );
-                    } catch (Exception $exception) {
-                        return new DataResponse(
-                             [
-                                 'status' => 'error',
-                                 'data' => [
-                                     'message' => $l->t('Step 2 failed. Exception: %s', [$exception->getMessage()]),
-                                 ]
-                             ],
-                             Http::STATUS_UNPROCESSABLE_ENTITY
-                        );
-                    }
-                }
-            }
+    #[NoAdminRequired]
+    #[NoCSRFRequired]
+    public function receiveToken(string $client_id = '', string $client_secret = '', string $redirect = '', int $step = 1, string $code = ''): DataResponse {
+        if ($step === 1) {
+            $params = ['client_id' => $client_id, 'redirect_uri' => $redirect, 'response_type' => 'code', 'scope' => 'https://www.googleapis.com/auth/drive', 'access_type' => 'offline', 'prompt' => 'consent'];
+            return new DataResponse(['status' => 'success', 'data' => ['url' => 'https://accounts.google.com/o/oauth2/v2/auth?' . http_build_query($params)]]);
         }
+        if ($step === 2) {
+            $postData = ['client_id' => $client_id, 'client_secret' => $client_secret, 'code' => $code, 'grant_type' => 'authorization_code', 'redirect_uri' => $redirect];
+            $ch = curl_init('https://oauth2.googleapis.com/token');
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+            curl_setopt($ch, CURLOPT_POST, true);
+            curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($postData));
+            curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+            curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
+            $response = curl_exec($ch);
+            curl_close($ch);
 
-        return new DataResponse(
-            [
-                'status' => 'error',
-                'data' => [],
-            ],
-            Http::STATUS_BAD_REQUEST
-        );
+            $tokenData = json_decode($response, true);
+            if (isset($tokenData['access_token'])) {
+                return new DataResponse(['status' => 'success', 'data' => ['token' => json_encode($tokenData)]]);
+            }
+            return new DataResponse(['status' => 'error', 'response' => $response], 400);
+        }
+        return new DataResponse(['status' => 'error'], 400);
+    }
+
+    #[NoAdminRequired]
+    #[NoCSRFRequired]
+    #[PublicPage]
+    #[NoSameSiteCookieRequired]
+    public function callback(string $code = '', string $error = '') {
+        header_remove('Content-Security-Policy');
+        header('Content-Type: text/html; charset=utf-8');
+        
+        echo "<!DOCTYPE html>
+        <html>
+        <head><title>Google Drive Auth</title></head>
+        <body>
+            <h3>Code received! Window is closing...</h3>
+            <script>
+                try {
+                    localStorage.setItem('gdrive_oauth_code', '{$code}');
+                } catch(e) {
+                    console.error('LocalStorage error:', e);
+                }
+                setTimeout(function() { window.close(); }, 500);
+            </script>
+        </body>
+        </html>";
+        
+        exit;
     }
 }
